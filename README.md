@@ -162,8 +162,8 @@ src/
 
 Each spec covers one slice of the system. Write them one at a time before implementing.
 
-- [ ] **spec: auth** — login flow, session save/load format, expiry detection, re-auth prompting
-- [ ] **spec: browser** — Playwright setup, headless config, session injection, page lifecycle, teardown
+- [x] **spec: auth** — login flow, session save/load format, expiry detection, re-auth prompting
+- [x] **spec: browser** — Playwright setup, headless config, session injection, page lifecycle, teardown
 - [ ] **spec: scrapers** — URL navigation patterns, network intercept filters, response normalisation for teams/channels/messages/chats
 - [ ] **spec: storage** — directory layout, slug generation, `_index.md` schema, monthly file naming, immutability contract, incremental update strategy (last message timestamp in `_index.md`)
 - [ ] **spec: sync** — orchestration order, parallelism, progress reporting, partial failure handling
