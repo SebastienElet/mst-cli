@@ -73,7 +73,7 @@ export async function login(): Promise<void> {
   await page.goto("https://teams.microsoft.com");
 
   // Wait for Teams to redirect to login, then for user to complete login and return to Teams
-  await page.waitForURL(/login\.microsoftonline\.com/, { timeout: 30_000 }).catch(() => {});
+  await page.waitForURL(/login\.microsoftonline\.com/u, { timeout: 30_000 }).catch(() => {});
 
   try {
     await page.waitForURL((url) => url.hostname === "teams.microsoft.com", {

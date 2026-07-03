@@ -4,5 +4,8 @@
     "correctness": "error",
     "suspicious": "warn",
     "pedantic": "warn"
+  },
+  "rules": {
+    "max-classes-per-file": ["warn", { "max": 2 }]
   }
 }

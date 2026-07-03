@@ -152,7 +152,7 @@ describe("status", () => {
     const result = await status(TEST_SESSION);
     expect(result.found).toBe(true);
     expect(result.valid).toBe(true);
-    expect(result.expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(result.expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T/u);
   });
 
   it("returns found=true, valid=false when session file is corrupt", async () => {
