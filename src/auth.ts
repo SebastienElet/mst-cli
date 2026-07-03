@@ -1,10 +1,11 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { StorageState } from 'playwright';
 import { SessionNotFoundError, SessionExpiredError } from './errors.js';
 
-export const SESSION_PATH = join(homedir(), '.mst', 'session.json');
+export const SESSION_DIR = join(homedir(), '.mst');
+export const SESSION_PATH = join(SESSION_DIR, 'session.json');
 
 const REQUIRED_COOKIES = ['ESTSAUTH', 'ESTSAUTHPERSISTENT'] as const;
 
@@ -53,4 +54,34 @@ export async function status(
   }
   const { valid, expiresAt } = isSessionValid(state);
   return { found: true, valid, expiresAt: expiresAt?.toISOString() ?? null };
+}
+
+export async function login(): Promise<void> {
+  const { chromium } = await import('playwright');
+  const browser = await chromium.launch({ headless: false });
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  await page.goto('https://teams.microsoft.com');
+
+  // Wait for Teams to redirect to login, then for user to complete login and return to Teams
+  await page.waitForURL(/login\.microsoftonline\.com/, { timeout: 30_000 }).catch(() => {});
+
+  try {
+    await page.waitForURL(
+      url => url.hostname === 'teams.microsoft.com',
+      { timeout: 5 * 60 * 1000 },
+    );
+  } catch {
+    process.stderr.write('Login cancelled — browser closed before authentication completed.\n');
+    await browser.close().catch(() => {});
+    process.exit(1);
+  }
+
+  await mkdir(SESSION_DIR, { recursive: true, mode: 0o700 });
+  const state = await context.storageState();
+  await writeFile(SESSION_PATH, JSON.stringify(state, null, 2), { mode: 0o600 });
+  await browser.close();
+
+  process.stderr.write(`Session saved to ${SESSION_PATH}\n`);
 }
