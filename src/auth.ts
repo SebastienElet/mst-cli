@@ -1,26 +1,27 @@
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-import type { BrowserContext } from 'playwright';
-import { SessionNotFoundError, SessionExpiredError } from './errors.js';
+import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import type { BrowserContext } from "playwright";
+import { SessionNotFoundError, SessionExpiredError } from "./errors.js";
 
-type StorageState = Awaited<ReturnType<BrowserContext['storageState']>>;
+type StorageState = Awaited<ReturnType<BrowserContext["storageState"]>>;
 
-export const SESSION_DIR = join(homedir(), '.mst');
-export const SESSION_PATH = join(SESSION_DIR, 'session.json');
+export const SESSION_DIR = join(homedir(), ".mst");
+export const SESSION_PATH = join(SESSION_DIR, "session.json");
 
-const REQUIRED_COOKIES = ['ESTSAUTH', 'ESTSAUTHPERSISTENT'] as const;
+const REQUIRED_COOKIES = ["ESTSAUTH", "ESTSAUTHPERSISTENT"] as const;
 
 export function isSessionValid(state: StorageState): { valid: boolean; expiresAt: Date | null } {
   const nowSec = Math.floor(Date.now() / 1000);
   let earliestExpiry: number | null = null;
 
   for (const name of REQUIRED_COOKIES) {
-    const cookie = state.cookies.find(c => c.name === name);
+    const cookie = state.cookies.find((c) => c.name === name);
     if (!cookie) return { valid: false, expiresAt: null };
     // expires === -1 means session cookie (no expiry) — treat as valid
     if (cookie.expires !== -1) {
-      if (cookie.expires <= 0 || cookie.expires < nowSec) return { valid: false, expiresAt: new Date(cookie.expires * 1000) };
+      if (cookie.expires <= 0 || cookie.expires < nowSec)
+        return { valid: false, expiresAt: new Date(cookie.expires * 1000) };
       if (earliestExpiry === null || cookie.expires < earliestExpiry) {
         earliestExpiry = cookie.expires;
       }
@@ -32,10 +33,10 @@ export function isSessionValid(state: StorageState): { valid: boolean; expiresAt
 
 export async function loadSession(sessionPath = SESSION_PATH): Promise<StorageState> {
   try {
-    const raw = await readFile(sessionPath, 'utf8');
+    const raw = await readFile(sessionPath, "utf8");
     return JSON.parse(raw) as StorageState;
   } catch (e: unknown) {
-    if ((e as NodeJS.ErrnoException).code === 'ENOENT') throw new SessionNotFoundError();
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") throw new SessionNotFoundError();
     throw e;
   }
 }
@@ -64,23 +65,22 @@ export async function status(
 }
 
 export async function login(): Promise<void> {
-  const { chromium } = await import('playwright');
+  const { chromium } = await import("playwright");
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  await page.goto('https://teams.microsoft.com');
+  await page.goto("https://teams.microsoft.com");
 
   // Wait for Teams to redirect to login, then for user to complete login and return to Teams
   await page.waitForURL(/login\.microsoftonline\.com/, { timeout: 30_000 }).catch(() => {});
 
   try {
-    await page.waitForURL(
-      url => url.hostname === 'teams.microsoft.com',
-      { timeout: 5 * 60 * 1000 },
-    );
+    await page.waitForURL((url) => url.hostname === "teams.microsoft.com", {
+      timeout: 5 * 60 * 1000,
+    });
   } catch {
-    process.stderr.write('Login cancelled — browser closed before authentication completed.\n');
+    process.stderr.write("Login cancelled — browser closed before authentication completed.\n");
     await browser.close().catch(() => {});
     process.exit(1);
   }
