@@ -51,8 +51,10 @@ export async function status(
   try {
     state = await loadSession(sessionPath);
   } catch (e) {
-    if (!(e instanceof SessionNotFoundError)) throw e;
-    return { found: false, valid: false, expiresAt: null };
+    if (e instanceof SessionNotFoundError) {
+      return { found: false, valid: false, expiresAt: null };
+    }
+    return { found: true, valid: false, expiresAt: null };
   }
   const { valid, expiresAt } = isSessionValid(state);
   return { found: true, valid, expiresAt: expiresAt?.toISOString() ?? null };

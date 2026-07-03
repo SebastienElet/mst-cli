@@ -27,7 +27,8 @@ auth
     if (!result.found) {
       console.log(JSON.stringify(errorEnvelope('No session found. Run: mst auth login', durationMs)));
       if (process.stdout.isTTY) process.stderr.write('No session found. Run: mst auth login\n');
-      process.exit(1);
+      process.exitCode = 1;
+      return;
     }
 
     if (!result.valid) {
@@ -39,7 +40,8 @@ auth
       if (process.stdout.isTTY) {
         process.stderr.write(`Session expired (${result.expiresAt}). Run: mst auth login\n`);
       }
-      process.exit(1);
+      process.exitCode = 1;
+      return;
     }
 
     console.log(JSON.stringify(successEnvelope({ valid: true, expiresAt: result.expiresAt }, durationMs)));

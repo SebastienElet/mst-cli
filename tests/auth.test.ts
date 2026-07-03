@@ -143,4 +143,10 @@ describe('status', () => {
     expect(result.valid).toBe(true);
     expect(result.expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
+
+  it('returns found=true, valid=false when session file is corrupt', async () => {
+    await writeFile(TEST_SESSION, 'not valid json {{{');
+    const result = await status(TEST_SESSION);
+    expect(result).toEqual({ found: true, valid: false, expiresAt: null });
+  });
 });
