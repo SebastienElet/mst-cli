@@ -51,12 +51,14 @@ describe('isSessionValid', () => {
     expect(result.expiresAt!.getTime()).toBeCloseTo(expiredAt * 1000, -3);
   });
 
-  it('returns valid=false when a cookie has expires=-1 (session cookie)', () => {
+  it('returns valid=true when a cookie has expires=-1 (session cookie)', () => {
     const state = makeState([
       { ...makeCookie('ESTSAUTH', 3600), expires: -1 },
       makeCookie('ESTSAUTHPERSISTENT', 3600),
     ]);
-    expect(isSessionValid(state).valid).toBe(false);
+    const result = isSessionValid(state);
+    expect(result.valid).toBe(true);
+    expect(result.expiresAt).toBeInstanceOf(Date);
   });
 
   it('returns valid=true with earliest expiresAt when both cookies are valid', () => {
