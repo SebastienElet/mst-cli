@@ -13,6 +13,8 @@ CLI tool to fetch Microsoft Teams data (teams, channels, messages, chats) by scr
 
 All dependency versions are pinned exactly (no `^` ranges) in `package.json` and locked in `pnpm-lock.yaml`.
 
+When adding a package, always pin it to its current **latest** version (`npm info <pkg> version`). For `@types/node`, pin to the latest patch of the **same major** as the pinned Node.js version (e.g. `24.x.x` while Node is `24.18.0`). Dependabot (`.github/dependabot.yml`) opens weekly PRs to keep deps current.
+
 ## Architecture
 
 ```
