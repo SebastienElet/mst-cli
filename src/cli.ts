@@ -1,0 +1,56 @@
+#!/usr/bin/env node
+import { Command } from 'commander';
+import { login, status } from './auth.js';
+import { successEnvelope, errorEnvelope } from './output.js';
+import { SessionNotFoundError, SessionExpiredError } from './errors.js';
+
+const program = new Command();
+program.name('mst').description('Microsoft Teams CLI');
+
+const auth = program.command('auth');
+
+auth
+  .command('login')
+  .description('Open browser and log in to Microsoft Teams')
+  .action(async () => {
+    await login();
+  });
+
+auth
+  .command('status')
+  .description('Check saved session validity')
+  .action(async () => {
+    const start = Date.now();
+    const result = await status();
+    const durationMs = Date.now() - start;
+
+    if (!result.found) {
+      console.log(JSON.stringify(errorEnvelope('No session found. Run: mst auth login', durationMs)));
+      if (process.stdout.isTTY) process.stderr.write('No session found. Run: mst auth login\n');
+      process.exit(1);
+    }
+
+    if (!result.valid) {
+      console.log(JSON.stringify(errorEnvelope(
+        'Session expired. Run: mst auth login',
+        durationMs,
+        { valid: false, expiresAt: result.expiresAt },
+      )));
+      if (process.stdout.isTTY) {
+        process.stderr.write(`Session expired (${result.expiresAt}). Run: mst auth login\n`);
+      }
+      process.exit(1);
+    }
+
+    console.log(JSON.stringify(successEnvelope({ valid: true, expiresAt: result.expiresAt }, durationMs)));
+    if (process.stdout.isTTY) process.stderr.write(`Session valid, expires ${result.expiresAt}\n`);
+  });
+
+program.parseAsync().catch((err: unknown) => {
+  if (err instanceof SessionNotFoundError || err instanceof SessionExpiredError) {
+    process.stderr.write('Session expired or not found. Run: mst auth login\n');
+    process.exit(1);
+  }
+  process.stderr.write(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
+  process.exit(1);
+});
