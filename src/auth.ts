@@ -1,5 +1,4 @@
 import { readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { StorageState } from 'playwright';
@@ -26,9 +25,13 @@ export function isSessionValid(state: StorageState): { valid: boolean; expiresAt
 }
 
 export async function loadSession(sessionPath = SESSION_PATH): Promise<StorageState> {
-  if (!existsSync(sessionPath)) throw new SessionNotFoundError();
-  const raw = await readFile(sessionPath, 'utf8');
-  return JSON.parse(raw) as StorageState;
+  try {
+    const raw = await readFile(sessionPath, 'utf8');
+    return JSON.parse(raw) as StorageState;
+  } catch (e: unknown) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') throw new SessionNotFoundError();
+    throw e;
+  }
 }
 
 export async function ensureValidSession(sessionPath = SESSION_PATH): Promise<StorageState> {
@@ -44,7 +47,8 @@ export async function status(
   let state: StorageState;
   try {
     state = await loadSession(sessionPath);
-  } catch {
+  } catch (e) {
+    if (!(e instanceof SessionNotFoundError)) throw e;
     return { found: false, valid: false, expiresAt: null };
   }
   const { valid, expiresAt } = isSessionValid(state);
