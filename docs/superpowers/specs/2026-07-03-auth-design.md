@@ -79,9 +79,12 @@ Then exits with code `1`.
 
 ---
 
-### `status(): { valid: boolean; expiresAt: string | null }`
+### `status(): { found: boolean; valid: boolean; expiresAt: string | null }`
 
-Calls `loadSession` + `isSessionValid`. Returns structured data for the `mst auth status` command. Does not throw — returns `{ valid: false, expiresAt: null }` on any error (file not found, parse failure).
+Calls `loadSession` + `isSessionValid`. Returns structured data for the `mst auth status` command. Does not throw:
+- If `session.json` is missing: `{ found: false, valid: false, expiresAt: null }`
+- If session is expired or cookies missing: `{ found: true, valid: false, expiresAt: <earliest expiry or null> }`
+- If session is valid: `{ found: true, valid: true, expiresAt: <earliest expiry> }`
 
 ---
 
@@ -106,11 +109,20 @@ Calls `status()`. Outputs the standard JSON envelope to stdout:
 }
 ```
 
-If `session.json` does not exist:
+If `session.json` does not exist (`found: false`):
 ```json
 {
   "success": false,
   "error": "No session found. Run: mst auth login"
+}
+```
+
+If session is expired (`found: true, valid: false`):
+```json
+{
+  "success": false,
+  "error": "Session expired. Run: mst auth login",
+  "data": { "valid": false, "expiresAt": "2026-07-02T18:00:00Z" }
 }
 ```
 
