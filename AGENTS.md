@@ -6,9 +6,12 @@ CLI tool to fetch Microsoft Teams data (teams, channels, messages, chats) by scr
 
 ## Tech stack
 
-- TypeScript + Node.js
+- TypeScript + Node.js **24.18.0** (pinned via `.nvmrc` and `engines`)
+- pnpm **11.9.0** (pinned via `packageManager` field) — use `pnpm install`, not `npm install`
 - Playwright (Chromium) — headless browser automation
 - commander — CLI argument parsing
+
+All dependency versions are pinned exactly (no `^` ranges) in `package.json` and locked in `pnpm-lock.yaml`.
 
 ## Architecture
 
