@@ -17,10 +17,13 @@ export function isSessionValid(state: StorageState): { valid: boolean; expiresAt
 
   for (const name of REQUIRED_COOKIES) {
     const cookie = state.cookies.find(c => c.name === name);
-    if (!cookie || cookie.expires <= 0) return { valid: false, expiresAt: null };
-    if (cookie.expires < nowSec) return { valid: false, expiresAt: new Date(cookie.expires * 1000) };
-    if (earliestExpiry === null || cookie.expires < earliestExpiry) {
-      earliestExpiry = cookie.expires;
+    if (!cookie) return { valid: false, expiresAt: null };
+    // expires === -1 means session cookie (no expiry) — treat as valid
+    if (cookie.expires !== -1) {
+      if (cookie.expires <= 0 || cookie.expires < nowSec) return { valid: false, expiresAt: new Date(cookie.expires * 1000) };
+      if (earliestExpiry === null || cookie.expires < earliestExpiry) {
+        earliestExpiry = cookie.expires;
+      }
     }
   }
 
