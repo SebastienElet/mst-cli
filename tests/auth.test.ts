@@ -2,9 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import type { StorageState } from 'playwright';
+import type { BrowserContext } from 'playwright';
 import { isSessionValid, loadSession, ensureValidSession, status } from '../src/auth.js';
 import { SessionNotFoundError, SessionExpiredError } from '../src/errors.js';
+
+type StorageState = Awaited<ReturnType<BrowserContext['storageState']>>;
 
 const TEST_DIR = join(tmpdir(), `mst-test-${process.pid}`);
 const TEST_SESSION = join(TEST_DIR, 'session.json');

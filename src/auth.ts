@@ -1,8 +1,10 @@
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import type { StorageState } from 'playwright';
+import type { BrowserContext } from 'playwright';
 import { SessionNotFoundError, SessionExpiredError } from './errors.js';
+
+type StorageState = Awaited<ReturnType<BrowserContext['storageState']>>;
 
 export const SESSION_DIR = join(homedir(), '.mst');
 export const SESSION_PATH = join(SESSION_DIR, 'session.json');
