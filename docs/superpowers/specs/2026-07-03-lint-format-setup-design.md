@@ -50,7 +50,7 @@ No config file. Defaults apply:
 
 ```json
 {
-  "*.ts": ["oxfmt --write", "oxlint"]
+  "**/*.ts": ["oxfmt", "oxlint"]
 }
 ```
 
