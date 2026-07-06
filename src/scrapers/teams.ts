@@ -1,5 +1,6 @@
 import type { BrowserContext } from "playwright";
 import { withBrowser } from "../browser.js";
+import { SessionExpiredError } from "../errors.js";
 
 type StorageState = Awaited<ReturnType<BrowserContext["storageState"]>>;
 
@@ -27,6 +28,7 @@ export async function listTeams(session: StorageState): Promise<Team[]> {
     const responsePromise = page.waitForResponse(TEAMS_URL_PATTERN, { timeout: 60_000 });
     await page.goto("https://teams.microsoft.com");
     const response = await responsePromise;
+    if (!response.ok()) throw new SessionExpiredError();
     const body = (await response.json()) as TeamsResponse;
     return body.teams
       .filter((t) => !t.isDeleted)

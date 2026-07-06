@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const { mockResponse, mockPage, mockHandle } = vi.hoisted(() => {
-  const response = { json: vi.fn() };
+  const response = { json: vi.fn(), ok: vi.fn().mockReturnValue(true) };
   const page = {
     waitForResponse: vi.fn().mockResolvedValue(response),
     goto: vi.fn().mockResolvedValue(null),
@@ -17,6 +17,7 @@ vi.mock("../src/browser.js", () => ({
 }));
 
 import { listTeams } from "../src/scrapers/teams.js";
+import { SessionExpiredError } from "../src/errors.js";
 import type { BrowserContext } from "playwright";
 
 type StorageState = Awaited<ReturnType<BrowserContext["storageState"]>>;
@@ -52,6 +53,7 @@ beforeEach(() => {
   mockPage.waitForResponse.mockResolvedValue(mockResponse);
   mockPage.goto.mockResolvedValue(null);
   mockResponse.json.mockResolvedValue(RAW_TEAMS_RESPONSE);
+  mockResponse.ok.mockReturnValue(true);
 });
 
 // eslint-disable-next-line max-lines-per-function
@@ -107,5 +109,10 @@ describe("listTeams", () => {
     });
     const teams = await listTeams(SESSION);
     expect(teams[0].description).toBeNull();
+  });
+
+  it("throws SessionExpiredError when response is not ok", async () => {
+    mockResponse.ok.mockReturnValue(false);
+    await expect(listTeams(SESSION)).rejects.toBeInstanceOf(SessionExpiredError);
   });
 });
