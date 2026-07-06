@@ -54,6 +54,7 @@ beforeEach(() => {
   mockResponse.json.mockResolvedValue(RAW_TEAMS_RESPONSE);
 });
 
+// eslint-disable-next-line max-lines-per-function
 describe("listTeams", () => {
   it("navigates to teams.microsoft.com", async () => {
     await listTeams(SESSION);
