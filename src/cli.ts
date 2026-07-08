@@ -1,11 +1,19 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { login, status } from "./auth.js";
+import { login, status, ensureValidSession } from "./auth.js";
 import { successEnvelope, errorEnvelope } from "./output.js";
 import { SessionNotFoundError, SessionExpiredError } from "./errors.js";
+import { listTeams } from "./scrapers/teams.js";
 
 const program = new Command();
 program.name("mst").description("Microsoft Teams CLI");
+
+function printAuthStatusTable(statusLabel: string, expiresAt: string | null): void {
+  const STATUS_W = "not found".length;
+  console.log(`${"STATUS".padEnd(STATUS_W)}  EXPIRES`);
+  console.log(`${"─".repeat(STATUS_W)}  ${"─".repeat(36)}`);
+  console.log(`${statusLabel.padEnd(STATUS_W)}  ${expiresAt ?? "—"}`);
+}
 
 const auth = program.command("auth");
 
@@ -19,40 +27,77 @@ auth
 auth
   .command("status")
   .description("Check saved session validity")
-  .action(async () => {
+  .option("--json", "Output as JSON instead of table")
+  .action(async (options: { json?: boolean }) => {
     const start = Date.now();
     const result = await status();
     const durationMs = Date.now() - start;
+    const asJson = options.json || !process.stdout.isTTY;
 
     if (!result.found) {
-      console.log(
-        JSON.stringify(errorEnvelope("No session found. Run: mst auth login", durationMs)),
-      );
-      if (process.stdout.isTTY) process.stderr.write("No session found. Run: mst auth login\n");
-      process.exitCode = 1;
-      return;
-    }
-
-    if (!result.valid) {
-      console.log(
-        JSON.stringify(
-          errorEnvelope("Session expired. Run: mst auth login", durationMs, {
-            valid: false,
-            expiresAt: result.expiresAt,
-          }),
-        ),
-      );
-      if (process.stdout.isTTY) {
-        process.stderr.write(`Session expired (${result.expiresAt}). Run: mst auth login\n`);
+      if (asJson) {
+        console.log(
+          JSON.stringify(errorEnvelope("No session found. Run: mst auth login", durationMs)),
+        );
+      } else {
+        printAuthStatusTable("not found", null);
+        process.stderr.write("Run: mst auth login\n");
       }
       process.exitCode = 1;
       return;
     }
 
-    console.log(
-      JSON.stringify(successEnvelope({ valid: true, expiresAt: result.expiresAt }, durationMs)),
-    );
-    if (process.stdout.isTTY) process.stderr.write(`Session valid, expires ${result.expiresAt}\n`);
+    if (!result.valid) {
+      if (asJson) {
+        console.log(
+          JSON.stringify(
+            errorEnvelope("Session expired. Run: mst auth login", durationMs, {
+              valid: false,
+              expiresAt: result.expiresAt,
+            }),
+          ),
+        );
+      } else {
+        printAuthStatusTable("expired", result.expiresAt);
+        process.stderr.write("Run: mst auth login\n");
+      }
+      process.exitCode = 1;
+      return;
+    }
+
+    if (asJson) {
+      console.log(
+        JSON.stringify(successEnvelope({ valid: true, expiresAt: result.expiresAt }, durationMs)),
+      );
+    } else {
+      printAuthStatusTable("valid", result.expiresAt);
+    }
+  });
+
+const team = program.command("team");
+
+team
+  .command("list")
+  .description("List all joined teams")
+  .option("--json", "Output as JSON instead of table")
+  .action(async (options: { json?: boolean }) => {
+    const start = Date.now();
+    const session = await ensureValidSession();
+    const teams = await listTeams(session);
+    const durationMs = Date.now() - start;
+
+    if (options.json || !process.stdout.isTTY) {
+      console.log(JSON.stringify(successEnvelope({ teams }, durationMs)));
+      return;
+    }
+
+    const nameWidth = Math.max(4, ...teams.map((t) => t.displayName.length));
+    const idWidth = Math.max(2, ...teams.map((t) => t.id.length));
+    console.log(`${"NAME".padEnd(nameWidth)}  ID`);
+    console.log(`${"─".repeat(nameWidth)}  ${"─".repeat(idWidth)}`);
+    for (const t of teams) {
+      console.log(`${t.displayName.padEnd(nameWidth)}  ${t.id}`);
+    }
   });
 
 program.parseAsync().catch((err: unknown) => {
