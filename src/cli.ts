@@ -8,6 +8,13 @@ import { listTeams } from "./scrapers/teams.js";
 const program = new Command();
 program.name("mst").description("Microsoft Teams CLI");
 
+function printAuthStatusTable(statusLabel: string, expiresAt: string | null): void {
+  const STATUS_W = "not found".length;
+  console.log(`${"STATUS".padEnd(STATUS_W)}  EXPIRES`);
+  console.log(`${"─".repeat(STATUS_W)}  ${"─".repeat(36)}`);
+  console.log(`${statusLabel.padEnd(STATUS_W)}  ${expiresAt ?? "—"}`);
+}
+
 const auth = program.command("auth");
 
 auth
@@ -20,7 +27,7 @@ auth
 auth
   .command("status")
   .description("Check saved session validity")
-  .option("--json", "Output as JSON instead of status line")
+  .option("--json", "Output as JSON instead of table")
   .action(async (options: { json?: boolean }) => {
     const start = Date.now();
     const result = await status();
@@ -33,7 +40,8 @@ auth
           JSON.stringify(errorEnvelope("No session found. Run: mst auth login", durationMs)),
         );
       } else {
-        process.stderr.write("No session found. Run: mst auth login\n");
+        printAuthStatusTable("not found", null);
+        process.stderr.write("Run: mst auth login\n");
       }
       process.exitCode = 1;
       return;
@@ -50,7 +58,8 @@ auth
           ),
         );
       } else {
-        process.stderr.write(`Session expired (${result.expiresAt}). Run: mst auth login\n`);
+        printAuthStatusTable("expired", result.expiresAt);
+        process.stderr.write("Run: mst auth login\n");
       }
       process.exitCode = 1;
       return;
@@ -61,7 +70,7 @@ auth
         JSON.stringify(successEnvelope({ valid: true, expiresAt: result.expiresAt }, durationMs)),
       );
     } else {
-      console.log(`Session valid, expires ${result.expiresAt}`);
+      printAuthStatusTable("valid", result.expiresAt);
     }
   });
 

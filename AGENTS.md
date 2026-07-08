@@ -42,7 +42,7 @@ Every command supports a `--json` flag. Output behaviour:
 
 **Human-readable formats:**
 - List commands: aligned table printed to stdout — header row, separator row (`─`), one row per item, columns sized to content
-- Single-value commands (e.g. `auth status`): one status line to stdout; error messages to stderr
+- Single-value commands (e.g. `auth status`): two-column key/value table to stdout; actionable error hint to stderr
 
 **JSON envelope shape:**
 ```json
