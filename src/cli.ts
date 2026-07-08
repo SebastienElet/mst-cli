@@ -61,16 +61,24 @@ const team = program.command("team");
 team
   .command("list")
   .description("List all joined teams")
-  .action(async () => {
+  .option("--json", "Output as JSON instead of table")
+  .action(async (options: { json?: boolean }) => {
     const start = Date.now();
     const session = await ensureValidSession();
     const teams = await listTeams(session);
     const durationMs = Date.now() - start;
-    console.log(JSON.stringify(successEnvelope({ teams }, durationMs)));
-    if (process.stdout.isTTY) {
-      for (const t of teams) {
-        process.stderr.write(`${t.displayName}\t${t.id}\n`);
-      }
+
+    if (options.json || !process.stdout.isTTY) {
+      console.log(JSON.stringify(successEnvelope({ teams }, durationMs)));
+      return;
+    }
+
+    const nameWidth = Math.max(4, ...teams.map((t) => t.displayName.length));
+    const idWidth = Math.max(2, ...teams.map((t) => t.id.length));
+    console.log(`${"NAME".padEnd(nameWidth)}  ID`);
+    console.log(`${"─".repeat(nameWidth)}  ${"─".repeat(idWidth)}`);
+    for (const t of teams) {
+      console.log(`${t.displayName.padEnd(nameWidth)}  ${t.id}`);
     }
   });
 
