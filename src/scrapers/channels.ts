@@ -21,11 +21,11 @@ type ChannelsResponse = {
   value: RawChannel[];
 };
 
-const CHANNELS_URL_PATTERN = /\/api\/csa\/.+\/channels/u;
-
 export async function listChannels(session: StorageState, teamId: string): Promise<Channel[]> {
+  const encodedTeamId = encodeURIComponent(teamId);
+  const channelsPattern = new RegExp(`/api/csa/.+/teams/${encodedTeamId}/channels`, "u");
   return await withBrowser(session, async ({ page }) => {
-    const responsePromise = page.waitForResponse(CHANNELS_URL_PATTERN, { timeout: 60_000 });
+    const responsePromise = page.waitForResponse(channelsPattern, { timeout: 60_000 });
     await page.goto(`https://teams.microsoft.com/_#/teamDetails/${teamId}`);
     const response = await responsePromise;
     if (!response.ok()) throw new SessionExpiredError();

@@ -76,6 +76,11 @@ describe("listChannels", () => {
     expect(
       (pattern as RegExp).test("https://teams.cloud.microsoft/api/csa/emea/api/v3/teams/users/me"),
     ).toBe(false);
+    expect(
+      (pattern as RegExp).test(
+        "https://teams.cloud.microsoft/api/csa/emea/api/v3/teams/19%3Aother%40thread.tacv2/channels",
+      ),
+    ).toBe(false);
   });
 
   it("sets a 60s timeout on waitForResponse", async () => {
