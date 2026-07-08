@@ -29,8 +29,27 @@ src/
 
 - No Graph API usage
 - Read-only — no writes to Teams
-- All raw commands output `{ success, data, metadata }` JSON to stdout
 - Specs live in `docs/superpowers/specs/` — check README TODO before implementing a feature
+
+## CLI output conventions
+
+Every command supports a `--json` flag. Output behaviour:
+
+| Context | Default | With `--json` |
+|---------|---------|---------------|
+| TTY | Human-readable | JSON envelope |
+| Piped (non-TTY) | JSON envelope | JSON envelope |
+
+**Human-readable formats:**
+- List commands: aligned table printed to stdout — header row, separator row (`─`), one row per item, columns sized to content
+- Single-value commands (e.g. `auth status`): one status line to stdout; error messages to stderr
+
+**JSON envelope shape:**
+```json
+{ "success": true, "data": { "..." : "..." }, "metadata": { "timestamp": "...", "duration_ms": 123 } }
+```
+
+Exit codes: `0` on success, `1` on error.
 
 ## Auth
 

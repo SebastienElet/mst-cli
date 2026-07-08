@@ -20,40 +20,49 @@ auth
 auth
   .command("status")
   .description("Check saved session validity")
-  .action(async () => {
+  .option("--json", "Output as JSON instead of status line")
+  .action(async (options: { json?: boolean }) => {
     const start = Date.now();
     const result = await status();
     const durationMs = Date.now() - start;
+    const asJson = options.json || !process.stdout.isTTY;
 
     if (!result.found) {
-      console.log(
-        JSON.stringify(errorEnvelope("No session found. Run: mst auth login", durationMs)),
-      );
-      if (process.stdout.isTTY) process.stderr.write("No session found. Run: mst auth login\n");
+      if (asJson) {
+        console.log(
+          JSON.stringify(errorEnvelope("No session found. Run: mst auth login", durationMs)),
+        );
+      } else {
+        process.stderr.write("No session found. Run: mst auth login\n");
+      }
       process.exitCode = 1;
       return;
     }
 
     if (!result.valid) {
-      console.log(
-        JSON.stringify(
-          errorEnvelope("Session expired. Run: mst auth login", durationMs, {
-            valid: false,
-            expiresAt: result.expiresAt,
-          }),
-        ),
-      );
-      if (process.stdout.isTTY) {
+      if (asJson) {
+        console.log(
+          JSON.stringify(
+            errorEnvelope("Session expired. Run: mst auth login", durationMs, {
+              valid: false,
+              expiresAt: result.expiresAt,
+            }),
+          ),
+        );
+      } else {
         process.stderr.write(`Session expired (${result.expiresAt}). Run: mst auth login\n`);
       }
       process.exitCode = 1;
       return;
     }
 
-    console.log(
-      JSON.stringify(successEnvelope({ valid: true, expiresAt: result.expiresAt }, durationMs)),
-    );
-    if (process.stdout.isTTY) process.stderr.write(`Session valid, expires ${result.expiresAt}\n`);
+    if (asJson) {
+      console.log(
+        JSON.stringify(successEnvelope({ valid: true, expiresAt: result.expiresAt }, durationMs)),
+      );
+    } else {
+      console.log(`Session valid, expires ${result.expiresAt}`);
+    }
   });
 
 const team = program.command("team");
