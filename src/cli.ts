@@ -4,6 +4,7 @@ import { login, status, ensureValidSession } from "./auth.js";
 import { successEnvelope, errorEnvelope } from "./output.js";
 import { SessionNotFoundError, SessionExpiredError } from "./errors.js";
 import { listTeams } from "./scrapers/teams.js";
+import { listChannels } from "./scrapers/channels.js";
 
 const program = new Command();
 program.name("mst").description("Microsoft Teams CLI");
@@ -97,6 +98,40 @@ team
     console.log(`${"─".repeat(nameWidth)}  ${"─".repeat(idWidth)}`);
     for (const t of teams) {
       console.log(`${t.displayName.padEnd(nameWidth)}  ${t.id}`);
+    }
+  });
+
+const channel = program.command("channel");
+
+channel
+  .command("list <teamId>")
+  .description("List all channels for a team")
+  .option("--json", "Output as JSON instead of table")
+  .action(async (teamId: string, options: { json?: boolean }) => {
+    const start = Date.now();
+    const session = await ensureValidSession();
+    const channels = await listChannels(session, teamId);
+    const durationMs = Date.now() - start;
+
+    if (options.json || !process.stdout.isTTY) {
+      console.log(JSON.stringify(successEnvelope({ channels }, durationMs)));
+      return;
+    }
+
+    const truncate = (s: string | null): string => {
+      if (!s) return "—";
+      return s.length > 60 ? `${s.slice(0, 60)}…` : s;
+    };
+
+    const truncated = channels.map((c) => ({ ...c, desc: truncate(c.description) }));
+    const nameWidth = Math.max(4, ...channels.map((c) => c.displayName.length));
+    const idWidth = Math.max(2, ...channels.map((c) => c.id.length));
+    const descWidth = Math.max(11, ...truncated.map((c) => c.desc.length));
+
+    console.log(`${"NAME".padEnd(nameWidth)}  ${"ID".padEnd(idWidth)}  DESCRIPTION`);
+    console.log(`${"─".repeat(nameWidth)}  ${"─".repeat(idWidth)}  ${"─".repeat(descWidth)}`);
+    for (const c of truncated) {
+      console.log(`${c.displayName.padEnd(nameWidth)}  ${c.id.padEnd(idWidth)}  ${c.desc}`);
     }
   });
 
