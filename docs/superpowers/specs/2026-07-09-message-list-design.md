@@ -185,10 +185,12 @@ Rules:
 
 ## Testing
 
-This is the first scraper to get tests in this repo — `vitest` is already wired up
-(`pnpm test`) but no `*.test.ts` files exist yet.
+Existing scrapers (`teams.ts`, `channels.ts`) already have tests in the top-level `tests/`
+directory (not colocated with `src/`), using `vi.hoisted` to build a mock `page`/`response` and
+`vi.mock("../src/browser.js", ...)` to stub `withBrowser`. No `vitest.config` file exists —
+default discovery already picks up `tests/*.test.ts`.
 
-Unit tests in `src/scrapers/messages.test.ts`:
+Unit tests in `tests/messages.test.ts`, following that existing pattern:
 - Mock `context.request.get` to return two pages (first with `_metadata.backwardLink` set,
   second without) — assert the pagination loop follows the link and stops correctly.
 - Assert `kind` is `"system"` for `messagetype` starting with `"ThreadActivity/"`, `"message"`
