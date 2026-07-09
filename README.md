@@ -118,7 +118,7 @@ mst team list
 mst team get <team-id>
 mst channel list <team-id>
 mst channel get <team-id> <channel-id>
-mst message list --team <id> --channel <id>
+mst message list --channel <id>
 mst message list --chat <chat-id>
 mst chat list
 mst chat get <chat-id>
