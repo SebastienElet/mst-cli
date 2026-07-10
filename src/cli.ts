@@ -6,6 +6,7 @@ import { SessionNotFoundError, SessionExpiredError } from "./errors.js";
 import { listTeams } from "./scrapers/teams.js";
 import { listChannels } from "./scrapers/channels.js";
 import { listMessages } from "./scrapers/messages.js";
+import { listChats } from "./scrapers/chats.js";
 
 const program = new Command();
 program.name("mst").description("Microsoft Teams CLI");
@@ -182,6 +183,48 @@ message
     for (const r of rows) {
       console.log(
         `${r.time.padEnd(timeWidth)}  ${r.from.padEnd(fromWidth)}  ${r.kind.padEnd(kindWidth)}  ${r.reply.padEnd(replyWidth)}  ${r.content}`,
+      );
+    }
+  });
+
+const chat = program.command("chat");
+
+chat
+  .command("list")
+  .description("List all chats (1:1, group, and meeting threads)")
+  .option("--json", "Output as JSON instead of table")
+  .action(async (options: { json?: boolean }) => {
+    const start = Date.now();
+    const session = await ensureValidSession();
+    const chats = await listChats(session);
+    const durationMs = Date.now() - start;
+
+    if (options.json || !process.stdout.isTTY) {
+      console.log(JSON.stringify(successEnvelope({ chats }, durationMs)));
+      return;
+    }
+
+    const rows = chats.map((c) => ({
+      title: c.title ?? "—",
+      type: c.type,
+      members: String(c.memberIds.length),
+      lastMessage: c.lastMessageTime ? c.lastMessageTime.replace("T", " ").slice(0, 16) : "—",
+    }));
+
+    const titleWidth = Math.max(5, ...rows.map((r) => r.title.length));
+    const typeWidth = 8;
+    const membersWidth = 7;
+    const lastMessageWidth = Math.max(12, ...rows.map((r) => r.lastMessage.length));
+
+    console.log(
+      `${"TITLE".padEnd(titleWidth)}  ${"TYPE".padEnd(typeWidth)}  ${"MEMBERS".padEnd(membersWidth)}  LAST MESSAGE`,
+    );
+    console.log(
+      `${"─".repeat(titleWidth)}  ${"─".repeat(typeWidth)}  ${"─".repeat(membersWidth)}  ${"─".repeat(lastMessageWidth)}`,
+    );
+    for (const r of rows) {
+      console.log(
+        `${r.title.padEnd(titleWidth)}  ${r.type.padEnd(typeWidth)}  ${r.members.padEnd(membersWidth)}  ${r.lastMessage}`,
       );
     }
   });
