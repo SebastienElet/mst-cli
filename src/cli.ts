@@ -5,6 +5,7 @@ import { successEnvelope, errorEnvelope } from "./output.js";
 import { SessionNotFoundError, SessionExpiredError } from "./errors.js";
 import { listTeams } from "./scrapers/teams.js";
 import { listChannels } from "./scrapers/channels.js";
+import { listMessages } from "./scrapers/messages.js";
 
 const program = new Command();
 program.name("mst").description("Microsoft Teams CLI");
@@ -132,6 +133,56 @@ channel
     console.log(`${"─".repeat(nameWidth)}  ${"─".repeat(idWidth)}  ${"─".repeat(descWidth)}`);
     for (const c of truncated) {
       console.log(`${c.displayName.padEnd(nameWidth)}  ${c.id.padEnd(idWidth)}  ${c.desc}`);
+    }
+  });
+
+const message = program.command("message");
+
+message
+  .command("list")
+  .description("List all messages in a channel")
+  .requiredOption("--channel <channelId>", "Channel ID")
+  .option("--json", "Output as JSON instead of table")
+  .action(async (options: { channel: string; json?: boolean }) => {
+    const start = Date.now();
+    const session = await ensureValidSession();
+    const messages = await listMessages(session, options.channel);
+    const durationMs = Date.now() - start;
+
+    if (options.json || !process.stdout.isTTY) {
+      console.log(JSON.stringify(successEnvelope({ messages }, durationMs)));
+      return;
+    }
+
+    const truncate = (s: string): string => {
+      if (!s) return "—";
+      return s.length > 60 ? `${s.slice(0, 60)}…` : s;
+    };
+
+    const rows = messages.map((m) => ({
+      time: m.composeTime.replace("T", " ").slice(0, 16),
+      from: m.from ?? "—",
+      kind: m.kind,
+      reply: m.isReply ? "✓" : "—",
+      content: truncate(m.content),
+    }));
+
+    const timeWidth = Math.max(4, ...rows.map((r) => r.time.length));
+    const fromWidth = Math.max(4, ...rows.map((r) => r.from.length));
+    const kindWidth = Math.max(4, ...rows.map((r) => r.kind.length));
+    const replyWidth = Math.max(5, ...rows.map((r) => r.reply.length));
+    const contentWidth = Math.max(7, ...rows.map((r) => r.content.length));
+
+    console.log(
+      `${"TIME".padEnd(timeWidth)}  ${"FROM".padEnd(fromWidth)}  ${"KIND".padEnd(kindWidth)}  ${"REPLY".padEnd(replyWidth)}  CONTENT`,
+    );
+    console.log(
+      `${"─".repeat(timeWidth)}  ${"─".repeat(fromWidth)}  ${"─".repeat(kindWidth)}  ${"─".repeat(replyWidth)}  ${"─".repeat(contentWidth)}`,
+    );
+    for (const r of rows) {
+      console.log(
+        `${r.time.padEnd(timeWidth)}  ${r.from.padEnd(fromWidth)}  ${r.kind.padEnd(kindWidth)}  ${r.reply.padEnd(replyWidth)}  ${r.content}`,
+      );
     }
   });
 
